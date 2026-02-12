@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape Area Calculator</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 340px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+            flex-shrink: 0;
+            z-index: 10;
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo span {
+            color: var(--primary);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .control-group h3 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Inputs & Buttons */
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            gap: 0.5rem;
+            user-select: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary.active {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            border-color: var(--warning);
+        }
+
+        .btn-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover {
+            background-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.6rem;
+            border-radius: 0.375rem;
+            width: 100%;
+            font-size: 0.875rem;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Results */
+        .results-card {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            align-items: center;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-label {
+            color: var(--text-muted);
+        }
+
+        .result-value {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .highlight-result {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .highlight-result .result-value {
+            color: var(--success);
+            font-size: 1.1rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            background-color: #0b0f19;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            cursor: default;
+            background-image: radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        #canvas-wrapper {
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            display: none;
+        }
+
+        #canvas-wrapper.has-image {
+            display: block;
+        }
+
+        .welcome-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            pointer-events: none;
+        }
+
+        .welcome-message svg {
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .welcome-message.hidden {
+            display: none;
+        }
+
+        canvas {
+            display: block;
+            max-height: 800px;
+            width: auto;
+        }
+
+        /* Zoom Lens */
+        .zoom-lens {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 240px;
+            height: 240px;
+            border: 2px solid var(--text-muted);
+            background-color: #000;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            display: none;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .zoom-lens canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
+        .zoom-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-size: 11px;
+            padding: 4px 8px;
+            text-align: center;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(15, 23, 42, 0.9);
+            padding: 0.75rem 1.5rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            font-size: 0.875rem;
+            color: var(--text-main);
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+            opacity: 0;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+            z-index: 50;
+        }
+
+        .status-bar.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .legend-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .shape-type-selector {
+            display: flex;
+            gap: 0.375rem;
+        }
+
+        .shape-type-selector .btn {
+            flex: 1;
+            font-size: 0.75rem;
+            padding: 0.5rem 0.25rem;
+        }
+
+        .shape-type-selector .btn.selected {
+            background-color: rgba(79, 70, 229, 0.25);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .shape-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.375rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .shape-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.625rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .shape-item:hover {
+            border-color: var(--text-muted);
+        }
+
+        .shape-item.selected {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        .shape-item .shape-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .shape-item .shape-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .shape-item .shape-name {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .shape-item .shape-area {
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .shape-item .btn-delete {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            opacity: 0.5;
+            padding: 2px;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .shape-item .btn-delete:hover {
+            opacity: 1;
+        }
+
+        .empty-list {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 1rem;
+            opacity: 0.6;
+        }
+
+        /* Drag Overlay */
+        #dragOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.9);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: var(--text-main);
+            font-size: 1.5rem;
+            font-weight: 600;
+            border: 4px dashed var(--primary);
+        }
+    </style>
+    <script src="UTIF.js"></script>
+</head>
+
+<body>
+    <div id="dragOverlay">
+        <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            style="margin-bottom: 1rem; color: var(--primary);">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+        </svg>
+        Drop image to load
+    </div>
+
+    <div class="sidebar">
+        <div class="logo">
+            <span>◎</span> ShapeAreaCalc
+        </div>
+
+        <!-- Upload -->
+        <div class="control-group">
+            <h3>1. Image Source</h3>
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                </svg>
+                Upload Image
+            </button>
+            <input type="file" id="fileInput" accept="image/*,.tif,.tiff">
+            <div id="fileName"
+                style="font-size: 0.75rem; color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                No file selected</div>
+        </div>
+
+        <!-- Scale -->
+        <div class="control-group">
+            <h3>2. Set Scale</h3>
+            <div class="input-row">
+                <input type="number" id="scaleLength" placeholder="Length" value="1">
+                <select id="scaleUnit"
+                    style="width: 80px; background-color: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); color: var(--text-main); padding: 0.6rem; border-radius: 0.375rem; font-size: 0.875rem;">
+                    <option value="mm">mm</option>
+                    <option value="µm" selected>µm</option>
+                    <option value="nm">nm</option>
+                </select>
+            </div>
+            <button class="btn btn-secondary" id="btnSetScale" disabled>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m8-2a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 1 1 0 001.414 1.414A2 2 0 0015.828 21a2 2 0 012.828 0 1 1 0 001.414-1.414 1 1 0 00-1.414-1.414A2 2 0 0015.828 21z">
+                    </path>
+                </svg>
+                Set Scale (Click 2 pts)
+            </button>
+            <div id="scaleInfo" style="font-size: 0.75rem; color: var(--warning); min-height: 1.2em;">Scale not defined
+            </div>
+        </div>
+
+        <!-- Shape Type -->
+        <div class="control-group">
+            <h3>3. Shape Type</h3>
+            <div class="shape-type-selector">
+                <button class="btn btn-secondary selected" data-type="ellipse" onclick="selectShapeType('ellipse')">⬮
+                    Ellipse</button>
+                <button class="btn btn-secondary" data-type="rectangle" onclick="selectShapeType('rectangle')">▭
+                    Rectangle</button>
+                <button class="btn btn-secondary" data-type="polygon" onclick="selectShapeType('polygon')">⬠
+                    Polygon</button>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;" id="drawHint">
+                Click &amp; drag on image to draw
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="control-group">
+            <div class="input-row">
+                <button class="btn btn-primary" id="btnAddShape" style="flex:1" disabled>✚ Add Shape</button>
+                <button class="btn btn-danger" id="btnReset">↺ Reset</button>
+            </div>
+        </div>
+
+        <!-- Shape List -->
+        <div class="control-group">
+            <h3>Shapes &amp; Areas</h3>
+            <div class="shape-list" id="shapeList">
+                <div class="empty-list">No shapes yet</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content" id="mainContent">
+        <div class="welcome-message" id="welcomeMessage">
+            <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                style="color: var(--primary);">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            <div>Upload or drag & drop your image to begin</div>
+        </div>
+
+        <div id="canvas-wrapper">
+            <canvas id="mainCanvas"></canvas>
+        </div>
+
+        <div class="zoom-lens" id="zoomLens">
+            <canvas id="zoomCanvas"></canvas>
+            <div class="zoom-info">5x Zoom</div>
+        </div>
+
+        <div class="status-bar" id="statusBar">Welcome</div>
+    </div>
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
