@@ -30,7 +30,9 @@ const els = {
     statusBar: document.getElementById('statusBar'),
     canvasWrapper: document.getElementById('canvas-wrapper'),
     dragOverlay: document.getElementById('dragOverlay'),
-    welcomeMessage: document.getElementById('welcomeMessage')
+    welcomeMessage: document.getElementById('welcomeMessage'),
+    btnExportImage: document.getElementById('btnExportImage'),
+    btnExportTxt: document.getElementById('btnExportTxt')
 };
 const ctx = els.mainCanvas.getContext('2d');
 const zoomCtx = els.zoomCanvas.getContext('2d');
@@ -475,7 +477,10 @@ function hexToRgba(hex, a) {
 
 /* ===== Shape List UI ===== */
 function updateShapeList() {
-    if (state.shapes.length === 0) { els.shapeList.innerHTML = '<div class="empty-list">No shapes yet</div>'; return; }
+    const hasShapes = state.shapes.length > 0;
+    els.btnExportImage.disabled = !hasShapes;
+    els.btnExportTxt.disabled = !hasShapes;
+    if (!hasShapes) { els.shapeList.innerHTML = '<div class="empty-list">No shapes yet</div>'; return; }
     const f = state.scale.factor, unit = state.scale.unit;
     const fmt = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const typeLabels = { ellipse: '⬮ Ellipse', rectangle: '▭ Rectangle', polygon: '⬠ Polygon' };
@@ -503,6 +508,48 @@ function showStatus(msg) {
     els.statusBar.textContent = msg; els.statusBar.classList.add('visible');
     if (state.statusTimeout) clearTimeout(state.statusTimeout);
     state.statusTimeout = setTimeout(() => els.statusBar.classList.remove('visible'), 4000);
+}
+
+/* ===== Export ===== */
+function exportImage() {
+    if (!state.image || state.shapes.length === 0) return;
+    const prevSel = state.selectedShapeId;
+    state.selectedShapeId = null;
+    render();
+    const link = document.createElement('a');
+    link.download = 'shapes_export.png';
+    link.href = els.mainCanvas.toDataURL('image/png');
+    link.click();
+    state.selectedShapeId = prevSel;
+    render();
+    showStatus('Image exported.');
+}
+
+function exportTxt() {
+    if (state.shapes.length === 0) return;
+    const f = state.scale.factor, unit = state.scale.unit;
+    const fmt = n => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const typeLabels = { ellipse: 'Ellipse', rectangle: 'Rectangle', polygon: 'Polygon' };
+    const lines = ['ShapeAreaCalc - Area Report', '==========================='];
+    if (state.scale.defined) lines.push(`Scale: ${state.scale.realLength} ${unit}  (1 px = ${state.scale.factor.toPrecision(4)} ${unit})`);
+    if (els.fileName.textContent !== 'No file selected') lines.push(`Image: ${els.fileName.textContent}`);
+    lines.push('');
+    let total = 0;
+    state.shapes.forEach(sh => {
+        const area = (state.scale.defined && f > 0) ? calcShapeArea(sh) : 0;
+        total += area;
+        const areaStr = (state.scale.defined && f > 0) ? `${fmt(area)} ${unit}²` : '—';
+        lines.push(`#${sh.id}  ${typeLabels[sh.type].padEnd(10)} ${areaStr}`);
+    });
+    lines.push('---------------------------');
+    lines.push(`Total:      ${(state.scale.defined && f > 0) ? `${fmt(total)} ${unit}²` : '—'}`);
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.download = 'shapes_area_report.txt';
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showStatus('TXT exported.');
 }
 
 init();
